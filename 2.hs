@@ -39,7 +39,7 @@ import qualified Data.IntMap              as IntMap
 import           Data.Ix                  (Ix)
 import           Debug.Trace              (trace)
 
-data Choice = Rock | Paper | Scissors
+data Choice = Rock | Paper | Scissors deriving Eq
 
 data Result = Win | Draw | Lose
 
@@ -63,14 +63,16 @@ playerChoice 'X' = Rock
 playerChoice 'Y' = Paper
 playerChoice 'Z' = Scissors
 
+forWin :: Choice -> Choice
+forWin Rock     = Paper
+forWin Paper    = Scissors
+forWin Scissors = Rock
+
 calcResult :: Choice -> Choice -> Result
-calcResult Rock Paper     = Win
-calcResult Paper Rock     = Lose
-calcResult Scissors Rock  = Win
-calcResult Rock Scissors  = Lose
-calcResult Paper Scissors = Win
-calcResult Scissors Paper = Lose
-calcResult _ _            = Draw
+calcResult op pl
+  | op == pl = Draw
+  | forWin op == pl = Win
+  | otherwise = Lose
 
 toResult :: Char -> Result
 toResult 'X' = Lose
@@ -78,14 +80,9 @@ toResult 'Y' = Draw
 toResult 'Z' = Win
 
 toChoice :: Choice -> Result -> Choice
-toChoice Rock Win      = Paper
-toChoice Rock Lose     = Scissors
-toChoice Paper Win     = Scissors
-toChoice Paper Lose    = Rock
-toChoice Scissors Win  = Rock
-toChoice Scissors Lose = Paper
-toChoice op Draw       = op
-
+toChoice op Win  = forWin op
+toChoice op Lose = forWin . forWin $ op
+toChoice op Draw = op
 
 score :: (Choice, Choice) -> Int
 score (op, pl) = choiceScore pl + resultScore (calcResult op pl)
@@ -98,7 +95,6 @@ parseLine' str = (opponentChoice (head str), toResult (str !! 2))
 
 score' :: (Choice, Result) -> Int
 score' (op, res) = choiceScore (toChoice op res) + resultScore res
-
 
 solve :: [String] -> Int
 solve = sum . fmap (score . parseLine)
